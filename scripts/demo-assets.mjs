@@ -1,0 +1,65 @@
+// Baixa as imagens demonstrativas, otimiza, recorta a vista de topo no prato
+// e gera os modelos GLB em escala real. Executado pelo workflow "Demo assets".
+//   node scripts/demo-assets.mjs            (baixa do manifesto)
+//   node scripts/demo-assets.mjs --models   (só regenera os GLB a partir do que já existe)
+import { mkdir, readFile, writeFile, access } from "node:fs/promises";
+import sharp from "sharp";
+import { buildGlb, glbBounds } from "../src/lib/glb.ts";
+import { DEMO_MODEL_SPECS } from "../src/data/demo.ts";
+
+const OUT = new URL("../public/demo/", import.meta.url);
+const manifest = JSON.parse(await readFile(new URL("./demo-sources.json", import.meta.url), "utf8"));
+const modelsOnly = process.argv.includes("--models");
+const WIDE = new Set(["cover", "salon", "chef"]);
+await mkdir(OUT, { recursive: true });
+const exists = (u) => access(u).then(() => true, () => false);
+
+/** Encontra o prato (claro) sobre o fundo preto e devolve o quadrado que o contém. */
+async function plateSquare(buf) {
+  const size = 256;
+  const { data } = await sharp(buf).resize(size, size, { fit: "fill" }).greyscale().raw().toBuffer({ resolveWithObject: true });
+  let x0 = size, x1 = 0, y0 = size, y1 = 0;
+  const cols = new Array(size).fill(0), rows = new Array(size).fill(0);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (data[y * size + x] > 70) { cols[x]++; rows[y]++; }
+  for (let i = 0; i < size; i++) {
+    if (cols[i] > size * 0.04) { x0 = Math.min(x0, i); x1 = Math.max(x1, i); }
+    if (rows[i] > size * 0.04) { y0 = Math.min(y0, i); y1 = Math.max(y1, i); }
+  }
+  if (x1 <= x0 || y1 <= y0) return null;
+  const side = Math.max(x1 - x0, y1 - y0) + 2;
+  return { cx: (x0 + x1 + 1) / 2 / size, cy: (y0 + y1 + 1) / 2 / size, side: Math.min(1, side / size) };
+}
+
+let failed = 0;
+if (!modelsOnly) {
+  for (const [id, key] of Object.entries(manifest.images)) {
+    try {
+      const res = await fetch(`${manifest.base}${key}.png`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      const meta = await sharp(buf).metadata();
+      await sharp(buf).resize({ width: WIDE.has(id) ? 1500 : 1000, withoutEnlargement: true }).jpeg({ quality: 82, mozjpeg: true }).toFile(new URL(`${id}.jpg`, OUT).pathname);
+      const spec = DEMO_MODEL_SPECS.find((s) => s.id === id);
+      if (spec && (spec.shape === "plate" || spec.shape === "bowl")) {
+        const sq = (await plateSquare(buf)) ?? { cx: 0.5, cy: 0.5, side: 0.9 };
+        const side = Math.round(sq.side * meta.width);
+        const left = Math.max(0, Math.min(meta.width - side, Math.round(sq.cx * meta.width - side / 2)));
+        const top = Math.max(0, Math.min(meta.height - side, Math.round(sq.cy * meta.height - side / 2)));
+        await sharp(buf).extract({ left, top, width: side, height: side }).resize(768, 768).jpeg({ quality: 82, mozjpeg: true }).toFile(new URL(`${id}-top.jpg`, OUT).pathname);
+        console.log(`✓ ${id} (prato ${Math.round(sq.side * 100)}% do quadro)`);
+      } else console.log(`✓ ${id}`);
+    } catch (e) { failed++; console.error(`✗ ${id}: ${e.message}`); }
+  }
+}
+
+for (const spec of DEMO_MODEL_SPECS) {
+  const top = new URL(`${spec.id}-top.jpg`, OUT);
+  const textured = spec.shape === "plate" || spec.shape === "bowl";
+  const texture = textured && (await exists(top)) ? new Uint8Array(await readFile(top)) : undefined;
+  if (textured && !texture) { console.warn(`· ${spec.id}: sem foto de topo, modelo não gerado`); continue; }
+  const glb = buildGlb({ ...spec, texture });
+  const b = glbBounds(glb);
+  await writeFile(new URL(`${spec.id}.glb`, OUT), glb);
+  console.log(`◆ ${spec.id}.glb ${(glb.byteLength / 1024).toFixed(0)} KB — ${(b.width * 100).toFixed(1)} × ${(b.depth * 100).toFixed(1)} × ${(b.height * 100).toFixed(1)} cm`);
+}
+if (failed) { console.error(`${failed} imagem(ns) falharam`); process.exit(1); }
