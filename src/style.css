@@ -18,3 +18,8 @@
 .theme-editor input{min-height:36px;padding:6px;background:var(--restaurant-bg);color:var(--restaurant-text);border:1px solid var(--restaurant-accent)}
 .theme-editor button{padding:12px}
 @media(max-width:600px){[data-restaurant] header{height:auto;min-height:85px;gap:10px;flex-wrap:wrap;padding:12px}[data-restaurant] nav{flex-wrap:wrap}[data-restaurant] nav select{max-width:145px}}
+
+/* Camera preview: never place a fake tabletop or opaque circular background behind the dish. */
+.camera .overlay{background:transparent;border:1px dashed rgba(255,255,255,.7);border-radius:0;box-shadow:none;padding:0;overflow:visible}
+.camera .overlay img{display:block;width:100%;height:100%;object-fit:contain;border-radius:0;filter:drop-shadow(0 12px 10px rgba(0,0,0,.32));pointer-events:none}
+.camera .overlay span{background:rgba(0,0,0,.7);padding:12px;color:white}
