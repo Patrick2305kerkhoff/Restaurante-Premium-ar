@@ -1,0 +1,53 @@
+name: Validate Maison screens
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project
+        run: npm install
+      - name: Verify production build
+        run: npm run build -- --base /Restaurante-Premium-ar/
+      - name: Install screenshot browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Capture actual React app screens
+        run: |
+          mkdir -p screenshots
+          (npm run dev -- --host 127.0.0.1 > /tmp/maison-vite.log 2>&1 & echo $! > /tmp/maison-vite.pid)
+          node --input-type=module <<'JS'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+          for (let i=0;i<40;i++) {
+            try { const response=await page.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle',timeout:3000}); if(response?.ok()) break; }
+            catch(e) { if(i===39) throw e; await new Promise(r=>setTimeout(r,1000)); }
+          }
+          await page.screenshot({path:'screenshots/01-home.png',fullPage:false});
+          await page.locator('#menu').scrollIntoViewIfNeeded();
+          await page.screenshot({path:'screenshots/02-cardapio.png',fullPage:false});
+          await page.getByRole('button',{name:'Gestão'}).click();
+          await page.screenshot({path:'screenshots/03-gestao.png',fullPage:true});
+          await page.setViewportSize({width:390,height:844});
+          await page.getByRole('button',{name:'Cardápio'}).click();
+          await page.screenshot({path:'screenshots/04-mobile.png',fullPage:true});
+          await browser.close();
+          JS
+      - name: Upload real screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maison-real-screenshots
+          path: screenshots/
+          if-no-files-found: warn
