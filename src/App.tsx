@@ -1,39 +1,36 @@
-import {useState} from "react";
-import "./style.css";
-type Dish={name:string;description:string;price:number;category:string;photo:string};
-const dishes:Dish[]=[
-{name:"Filé Premium",description:"Filé mignon grelhado com molho especial e risoto.",price:89.90,category:"Pratos Principais",photo:"https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=900&auto=format&fit=crop"},
-{name:"Salmão Grelhado",description:"Salmão ao molho de ervas com legumes.",price:79.90,category:"Pratos Principais",photo:"https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=900&auto=format&fit=crop"},
-{name:"Risoto de Camarão",description:"Risoto cremoso com camarões selecionados.",price:74.90,category:"Pratos Principais",photo:"https://images.unsplash.com/photo-1559847844-5315695dadae?w=900&auto=format&fit=crop"},
-{name:"Burrata Artesanal",description:"Burrata fresca, tomate confit e pesto.",price:68,category:"Entradas",photo:"https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=900&auto=format&fit=crop"},
-{name:"Tiramisù",description:"Mascarpone, café e cacau.",price:48,category:"Sobremesas",photo:"https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=900&auto=format&fit=crop"}
-];
-const categories=["Entradas","Pratos Principais","Sobremesas","Bebidas"];
-export default function App(){
- const [page,setPage]=useState<"home"|"menu"|"ar"|"favorites"|"admin">("home");
- const [category,setCategory]=useState("Pratos Principais");
- const [selected,setSelected]=useState<Dish>(dishes[0]);
- const [cart,setCart]=useState(0);
- const [favorites,setFavorites]=useState<string[]>([]);
- const [photos,setPhotos]=useState<Record<string,string>>({});
- const [name,setName]=useState(localStorage.getItem("maison-name")||"Restaurante Premium AR");
- const [subtitle,setSubtitle]=useState(localStorage.getItem("maison-subtitle")||"Cardápio Interativo com Realidade Aumentada");
- const [arMode,setArMode]=useState<"ar"|"foto">("foto");
- const [message,setMessage]=useState("");
- const [menu,setMenu]=useState<Dish[]>(dishes);
- const openAR=(d:Dish)=>{setSelected(d);setArMode("foto");setPage("ar");setMessage("")};
- const imageFor=(d:Dish)=>photos[d.name]||d.photo;
- const format=(n:number)=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
- const nav=(target:typeof page)=>{setPage(target);window.scrollTo(0,0)};
- const upload=(d:Dish,file?:File)=>{if(!file)return;const reader=new FileReader();reader.onload=()=>setPhotos(old=>({...old,[d.name]:String(reader.result)}));reader.readAsDataURL(file)};
- return <div className="app-shell">
- <div className="phone">
- {page==="home"&&<section className="welcome"><div className="welcome-shade"><div className="crest">✦<span>♜</span>✦</div><div className="overline">UMA EXPERIÊNCIA GASTRONÔMICA</div><h1>{name}</h1><div className="gold-line"/><p>{subtitle}</p><button className="gold-button" onClick={()=>nav("menu")}>♧ &nbsp; Ver Cardápio</button><div className="welcome-links"><button onClick={()=>nav("menu")}>◇<small>Como funciona</small></button><button onClick={()=>nav("admin")}>✧<small>Sobre o restaurante</small></button><button onClick={()=>nav("admin")}>✉<small>Contato</small></button></div></div></section>}
- {page==="menu"&&<><div className="screen-header"><button onClick={()=>nav("home")}>‹</button><h2>Cardápio</h2><span>⌕</span></div><div className="category-scroll">{categories.map(c=><button key={c} className={category===c?"selected":""} onClick={()=>setCategory(c)}><span>{c==="Entradas"?"♧":c==="Pratos Principais"?"♨":c==="Sobremesas"?"♢":"♧"}</span>{c}</button>)}</div><div className="menu-content"><div className="section-eyebrow">ESCOLHAS DO CHEF</div><h3>{category}</h3>{menu.filter(d=>d.category===category).map(d=><article className="menu-dish" key={d.name}><img src={imageFor(d)} alt={d.name}/><div className="dish-info"><h4>{d.name}</h4><p>{d.description}</p><strong>{format(d.price)}</strong><div className="dish-actions"><button onClick={()=>openAR(d)}>⬡ Ver em AR</button><button aria-label={"Favoritar "+d.name} onClick={()=>setFavorites(a=>a.includes(d.name)?a.filter(x=>x!==d.name):[...a,d.name])}>{favorites.includes(d.name)?"♥":"♡"}</button></div></div></article>)}{!menu.some(d=>d.category===category)&&<p className="empty">Nenhum item cadastrado nesta categoria.</p>}</div></>}
- {page==="ar"&&<div className="ar-view"><img className="ar-background" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1000&auto=format&fit=crop" alt="Ambiente demonstrativo de restaurante"/><div className="ar-top"><button onClick={()=>nav("menu")}>‹</button><div className="ar-toggle"><button className={arMode==="ar"?"active":""} onClick={()=>{setArMode("ar");setMessage("A realidade aumentada espacial depende de WebXR e teste em celular compatível. A foto abaixo é apenas uma prévia.")}}>AR</button><button className={arMode==="foto"?"active":""} onClick={()=>{setArMode("foto");setMessage("")}}>Foto</button></div><span>ⓘ</span></div><div className="plate-display"><img src={imageFor(selected)} alt={selected.name}/></div><div className="ar-bottom">{message&&<p className="ar-note">{message}</p>}<div className="ar-product"><div><h3>{selected.name}</h3><strong>{format(selected.price)}</strong></div><button onClick={()=>{setCart(c=>c+1);setMessage("Adicionado ao pedido demonstrativo.")}}>🛒 Pedir</button></div><div className="shutter">◯</div><a className="ar-real-link" href={"ar-proof.html"} target="_blank" rel="noopener noreferrer">Abrir teste real de AR (WebXR) ↗</a><p className="ar-disclaimer">Prévia fotográfica demonstrativa · não é AR espacial. O teste WebXR requer HTTPS e Android compatível.</p></div></div>}
- {page==="favorites"&&<><div className="screen-header"><button onClick={()=>nav("menu")}>‹</button><h2>Favoritos</h2><span>♡</span></div><div className="menu-content">{menu.filter(d=>favorites.includes(d.name)).map(d=><article className="menu-dish" key={d.name}><img src={imageFor(d)} alt={d.name}/><div className="dish-info"><h4>{d.name}</h4><strong>{format(d.price)}</strong><div className="dish-actions"><button onClick={()=>openAR(d)}>⬡ Ver em AR</button></div></div></article>)}{favorites.length===0&&<p className="empty">Toque no coração de um prato para salvar.</p>}</div></>}
- {page==="admin"&&<><div className="screen-header"><button onClick={()=>nav("home")}>‹</button><h2>Gestão</h2><span>⚙</span></div><div className="admin-content"><div className="section-eyebrow">IDENTIDADE DO RESTAURANTE</div><h3>Personalização</h3><label>Nome do restaurante<input value={name} onChange={e=>{setName(e.target.value);localStorage.setItem("maison-name",e.target.value)}}/></label><label>Assinatura<input value={subtitle} onChange={e=>{setSubtitle(e.target.value);localStorage.setItem("maison-subtitle",e.target.value)}}/></label><p className="admin-notice">Fotografias abaixo são referências demonstrativas, não fotos dos pratos do estabelecimento. Substitua pelas fotos reais para cada restaurante.</p><h3>Pratos e fotografias</h3>{menu.map(d=><article className="admin-dish" key={d.name}><img src={imageFor(d)} alt={d.name}/><div><strong>{d.name}</strong><small>{format(d.price)}</small><label className="upload">Substituir foto<input type="file" accept="image/*" onChange={e=>upload(d,e.target.files?.[0])}/></label></div></article>)}<p className="admin-notice">Protótipo sem autenticação, backend ou pedidos reais.</p></div></>}
- {page!=="home"&&page!=="ar"&&<div className="bottom-nav"><button onClick={()=>nav("home")}><span>⌂</span>Início</button><button className={page==="menu"?"active":""} onClick={()=>nav("menu")}><span>▤</span>Cardápio</button><button onClick={()=>openAR(selected)}><span>⬡</span>AR</button><button className={page==="favorites"?"active":""} onClick={()=>nav("favorites")}><span>♡</span>Favoritos</button></div>}
- </div><div className="desktop-caption"><span>MAISON · CONCEITO VISUAL</span><h2>Uma experiência<br/><em>à altura do prato.</em></h2><p>Protótipo visual mobile inspirado na referência aprovada. Fotografias ilustrativas devem ser substituídas pelas imagens reais de cada restaurante. O modo AR espacial ainda precisa de integração e validação.</p><button onClick={()=>nav("admin")}>Abrir gestão ↗</button><p className="cart-count">Itens no pedido demonstrativo: {cart}</p></div>
- </div>
+import { Navigate, Route, Routes } from "react-router-dom";
+import { AdminShell, LoginPage } from "./admin/Shell.tsx";
+import { BrandPage, CategoriesPage, DashboardPage, OrdersPage, RestaurantsPage, TablesPage } from "./admin/pages.tsx";
+import { ProductsPage } from "./admin/Products.tsx";
+import { ARPage } from "./customer/AR.tsx";
+import { CustomerShell, HomeRedirect, TableEntry } from "./customer/Shell.tsx";
+import { AboutPage, DishPage, FavoritesPage, HomePage, MenuPage, OrderPage } from "./customer/pages.tsx";
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/r/:slug/mesa/:token" element={<TableEntry />} />
+      <Route path="/r/:slug" element={<CustomerShell />}>
+        <Route index element={<HomePage />} />
+        <Route path="cardapio" element={<MenuPage />} />
+        <Route path="prato/:id" element={<DishPage />} />
+        <Route path="ar/:id" element={<ARPage />} />
+        <Route path="favoritos" element={<FavoritesPage />} />
+        <Route path="pedido" element={<OrderPage />} />
+        <Route path="sobre" element={<AboutPage />} />
+      </Route>
+      <Route path="/admin/login" element={<LoginPage />} />
+      <Route path="/admin" element={<AdminShell />}>
+        <Route index element={<DashboardPage />} />
+        <Route path="pedidos" element={<OrdersPage />} />
+        <Route path="produtos" element={<ProductsPage />} />
+        <Route path="categorias" element={<CategoriesPage />} />
+        <Route path="mesas" element={<TablesPage />} />
+        <Route path="marca" element={<BrandPage />} />
+        <Route path="restaurantes" element={<RestaurantsPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }

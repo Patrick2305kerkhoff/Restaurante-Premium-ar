@@ -4,8 +4,6 @@ on:
   push:
     paths:
       - scripts/demo-sources.json
-      - scripts/demo-assets.mjs
-      - src/lib/glb.ts
 permissions:
   contents: write
 concurrency:

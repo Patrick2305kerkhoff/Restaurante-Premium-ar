@@ -126,13 +126,14 @@ function dishMeshes(spec: ModelSpec, materials: Material[]): Mesh[] {
 function bottleMeshes(spec: ModelSpec, materials: Material[]): Mesh[] {
   const R = cm(spec.widthCm) / 2;
   const H = cm(spec.heightCm);
+  const B = 0.988; // o rótulo (raio 1) é a parte mais larga
   const glass = spec.tint ?? [0.05, 0.11, 0.07];
-  const body: [number, number][] = [[0, 0], [0.92, 0], [1, 0.012], [1, H * 0.2]];
-  const label: [number, number][] = [[1.012, H * 0.2], [1.012, H * 0.47]];
-  const upper: [number, number][] = [[1, H * 0.47], [1, H * 0.58]];
+  const body: [number, number][] = [[0, 0], [0.92, 0], [B, 0.012], [B, H * 0.2]];
+  const label: [number, number][] = [[1, H * 0.2], [1, H * 0.47]];
+  const upper: [number, number][] = [[B, H * 0.47], [B, H * 0.58]];
   for (let i = 1; i <= 8; i++) {
     const t = i / 8;
-    upper.push([1 - 0.62 * (t * t * (3 - 2 * t)), H * (0.58 + 0.16 * t)]);
+    upper.push([B - (B - 0.38) * (t * t * (3 - 2 * t)), H * (0.58 + 0.16 * t)]);
   }
   upper.push([0.38, H * 0.86]);
   const capsule: [number, number][] = [[0.4, H * 0.86], [0.4, H * 0.985], [0.42, H * 0.985], [0.42, H], [0, H]];
