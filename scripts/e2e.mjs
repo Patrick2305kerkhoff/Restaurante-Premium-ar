@@ -11,9 +11,9 @@ await mkdir(OUT, { recursive: true });
 let server;
 let base = process.env.E2E_URL;
 if (!base) {
-  server = spawn("npx", ["vite", "preview", "--port", "4173", "--strictPort"], { stdio: "ignore" });
+  server = spawn("npx", ["vite", "preview", "--host", "127.0.0.1", "--port", "4173", "--strictPort"], { stdio: "ignore" });
   base = "http://127.0.0.1:4173/";
-  for (let i = 0; i < 40; i++) { try { if ((await fetch(base)).ok) break; } catch { /* aguardando */ } await new Promise((r) => setTimeout(r, 250)); }
+  for (let i = 0; i < 120; i++) { try { if ((await fetch(base)).ok) break; } catch { /* aguardando */ } await new Promise((r) => setTimeout(r, 250)); }
 }
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/chromium"].find(existsSync);
 const browser = await chromium.launch({ headless: true, ...(chrome && !process.env.CI ? { executablePath: chrome } : {}), args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
