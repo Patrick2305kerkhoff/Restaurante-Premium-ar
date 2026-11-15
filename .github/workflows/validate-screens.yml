@@ -35,12 +35,13 @@ jobs:
             catch(e) { if(i===39) throw e; await new Promise(r=>setTimeout(r,1000)); }
           }
           await page.screenshot({path:'screenshots/01-home.png',fullPage:false});
-          await page.locator('#menu').scrollIntoViewIfNeeded();
+          await page.getByRole('button',{name:'Ver Cardápio'}).click();
+          await page.getByRole('heading',{name:'Cardápio',exact:true}).waitFor();
           await page.screenshot({path:'screenshots/02-cardapio.png',fullPage:false});
-          await page.getByRole('button',{name:'Gestão'}).click();
+          await page.getByRole('button',{name:'Abrir gestão'}).click();
           await page.screenshot({path:'screenshots/03-gestao.png',fullPage:true});
           await page.setViewportSize({width:390,height:844});
-          await page.getByRole('button',{name:'Cardápio'}).click();
+          await page.getByRole('button',{name:'Cardápio',exact:true}).click();
           await page.screenshot({path:'screenshots/04-mobile.png',fullPage:true});
           await browser.close();
           JS
