@@ -31,7 +31,21 @@ async function plateSquare(buf) {
 }
 
 let failed = 0;
+const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7);
+// Fotos cinematográficas em ângulo (4:5) usadas no cardápio e na página do prato.
 if (!modelsOnly) {
+  for (const [id, key] of Object.entries(manifest.heroes ?? {})) {
+    const out = new URL(`${id}-hero.jpg`, OUT);
+    if (await exists(out)) continue;
+    try {
+      const res = await fetch(`${manifest.base}${key}.png`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await sharp(Buffer.from(await res.arrayBuffer())).resize({ width: 1080, withoutEnlargement: true }).jpeg({ quality: 84, mozjpeg: true }).toFile(out.pathname);
+      console.log(`★ ${id}-hero`);
+    } catch (e) { failed++; console.error(`✗ ${id}-hero: ${e.message}`); }
+  }
+}
+if (!modelsOnly && only !== "heroes") {
   for (const [id, key] of Object.entries(manifest.images)) {
     try {
       const res = await fetch(`${manifest.base}${key}.png`);
@@ -52,7 +66,7 @@ if (!modelsOnly) {
   }
 }
 
-for (const spec of DEMO_MODEL_SPECS) {
+for (const spec of only === "heroes" ? [] : DEMO_MODEL_SPECS) {
   const top = new URL(`${spec.id}-top.jpg`, OUT);
   const textured = spec.shape === "plate" || spec.shape === "bowl";
   const texture = textured && (await exists(top)) ? new Uint8Array(await readFile(top)) : undefined;

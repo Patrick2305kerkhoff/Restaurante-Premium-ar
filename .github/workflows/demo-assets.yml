@@ -20,7 +20,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Baixar, otimizar e gerar modelos GLB
-        run: node scripts/demo-assets.mjs
+        run: node scripts/demo-assets.mjs --only=heroes
       - name: Commit dos assets
         run: |
           git config user.name "github-actions[bot]"
