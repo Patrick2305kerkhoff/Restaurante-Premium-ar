@@ -6,6 +6,7 @@ import { mkdir, readFile, writeFile, access } from "node:fs/promises";
 import sharp from "sharp";
 import { buildGlb, glbBounds } from "../src/lib/glb.ts";
 import { DEMO_MODEL_SPECS } from "../src/data/demo.ts";
+import { hybridDish } from "./optimize-glb.mjs";
 
 const OUT = new URL("../public/demo/", import.meta.url);
 const manifest = JSON.parse(await readFile(new URL("./demo-sources.json", import.meta.url), "utf8"));
@@ -46,6 +47,23 @@ if (!modelsOnly) {
     } catch (e) { failed++; console.error(`✗ ${id}-hero: ${e.message}`); }
   }
 }
+// Modelos com volume real: comida em 3D (imagem→3D) sobre a louça procedural em escala.
+const food3d = manifest.food3d ?? {};
+if (!modelsOnly) {
+  for (const [id, key] of Object.entries(food3d)) {
+    const spec = DEMO_MODEL_SPECS.find((s) => s.id === id);
+    const stamp = new URL(`${id}.3d`, OUT);
+    if (!spec || ((await exists(stamp)) && (await readFile(stamp, "utf8")) === key)) continue;
+    try {
+      const res = await fetch(`${ROOT}${key}.glb`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { glb, size } = await hybridDish(new Uint8Array(await res.arrayBuffer()), spec);
+      await writeFile(new URL(`${id}.glb`, OUT), glb);
+      await writeFile(stamp, key);
+      console.log(`⬢ ${id}.glb (3D) ${(glb.byteLength / 1048576).toFixed(2)} MB — ${size.map((v) => (v * 100).toFixed(1)).join(" × ")} cm`);
+    } catch (e) { failed++; console.error(`✗ ${id} 3D: ${e.message}`); }
+  }
+}
 // Experimentos de imagem→3D: baixados sem alteração para avaliação.
 if (!modelsOnly) {
   await mkdir(new URL("lab/", OUT), { recursive: true });
@@ -81,7 +99,7 @@ if (!modelsOnly && only !== "heroes") {
   }
 }
 
-for (const spec of only === "heroes" ? [] : DEMO_MODEL_SPECS) {
+for (const spec of only === "heroes" ? [] : DEMO_MODEL_SPECS.filter((s) => !food3d[s.id])) {
   const top = new URL(`${spec.id}-top.jpg`, OUT);
   const textured = spec.shape === "plate" || spec.shape === "bowl";
   const texture = textured && (await exists(top)) ? new Uint8Array(await readFile(top)) : undefined;

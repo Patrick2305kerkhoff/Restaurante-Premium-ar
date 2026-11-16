@@ -120,7 +120,14 @@ function dishMeshes(spec: ModelSpec, materials: Material[]): Mesh[] {
   const textured = !!spec.texture;
   materials.push({ color: [1, 1, 1, 1], metallic: 0, roughness: 0.55, textured });
   materials.push({ color: [0.96, 0.95, 0.92, 1], metallic: 0, roughness: 0.25 });
-  return [lathe(top, rx, rz, 0, textured), lathe(under.reverse(), rx, rz, 1, false)];
+  const meshes = [lathe(top, rx, rz, 0, textured), lathe(under.reverse(), rx, rz, 1, false)];
+  if (!textured) {
+    // Louça lisa (usada com comida em 3D): porcelana brilhante e filete dourado na borda.
+    materials[0] = { color: [0.97, 0.96, 0.94, 1], metallic: 0, roughness: 0.22 };
+    materials.push({ color: [0.83, 0.66, 0.33, 1], metallic: 1, roughness: 0.3 });
+    meshes.push(lathe([[0.972, rimH + 0.0005], [0.998, rimH + 0.0005]], rx, rz, 2, false));
+  }
+  return meshes;
 }
 
 function bottleMeshes(spec: ModelSpec, materials: Material[]): Mesh[] {
