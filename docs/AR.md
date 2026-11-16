@@ -41,6 +41,16 @@ Passos no painel (Produtos e AR → editar → Realidade aumentada):
 ### Caminho profissional (volume fiel)
 Fotogrametria: 20–40 fotos ao redor do prato (Object Capture do iPhone, Polycam, RealityScan). Exporte **GLB** em metros (e **USDZ**, opcional) e envie no mesmo cadastro, em *Limitações e alternativa profissional*. Recomenda-se até ~5 MB por modelo.
 
+### Modelo híbrido com volume (usado nos 7 pratos em destaque da demonstração)
+`scripts/optimize-glb.mjs` combina os dois caminhos:
+1. a comida é isolada em uma imagem sem a louça e convertida em malha 3D (imagem→3D; na demonstração, Tripo via Higgsfield, ~9 créditos por prato);
+2. `hybridDish()` gera a louça procedural nas medidas reais, apoia a comida no fundo do prato, ajusta o diâmetro e **limita a altura à medida cadastrada** (esses geradores exageram a profundidade), reduz a malha e as texturas (≈1,3 MB por prato).
+
+Tentar converter prato + comida de uma vez não funcionou: a louça branca sai quebrada. Por isso a louça é sempre procedural.
+O mesmo utilitário normaliza um GLB de fotogrametria: `node scripts/optimize-glb.mjs entrada.glb saida.glb 27`.
+
+Limite honesto: a geometria da comida é uma estimativa plausível feita por IA a partir de uma imagem, não uma medição do prato real.
+
 ## Estado dos testes
 - Automatizado: GLB válido, bounding box igual às dimensões cadastradas (teste unitário para os 40 modelos), carregamento no visualizador e escala lida do `model-viewer` (e2e).
 - **Pendente: teste em aparelhos físicos.** A sessão de AR com câmera não pode ser exercitada em navegador automatizado. Roteiro:

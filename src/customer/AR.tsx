@@ -125,7 +125,7 @@ export function ARPage() {
         <details className="ar-info">
           <summary>Como funciona</summary>
           <p>O prato é um modelo 3D nas dimensões reais cadastradas pelo restaurante. O ARCore (Android) ou o ARKit (iPhone) detecta a superfície da mesa, ancora o modelo e mantém a posição enquanto você se move.</p>
-          <p>{dish.shape === "plate" || dish.shape === "bowl" ? "A louça tem geometria real; a comida é representada pela fotografia de topo aplicada sobre o prato, com relevo suave." : "Modelo genérico da garrafa/taça nas dimensões reais."}</p>
+          <p>{dish.shape === "plate" || dish.shape === "bowl" ? "A louça tem geometria real nas medidas cadastradas. A comida vem de um modelo 3D com volume quando o restaurante o envia; no cadastro rápido, é a fotografia de topo aplicada sobre o prato com relevo suave." : "Modelo genérico da garrafa/taça nas dimensões reais."}</p>
         </details>
       </div>
     </div>

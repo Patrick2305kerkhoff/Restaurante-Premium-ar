@@ -83,7 +83,7 @@ export const DEMO_CATEGORIES: Category[] = [
 type Row = [id: string, cat: string, name: string, price: number, description: string, ingredients: string, shape: ModelShape, w: number, d: number, h: number, featured?: boolean];
 
 const M: Row[] = [
-  ["vieiras", "entradas", "Vieiras Seladas", 98, "Vieiras canadenses douradas na manteiga noisette sobre purê aveludado de couve-flor, finalizadas com caviar e ervas do jardim.", "Vieiras, couve-flor, manteiga noisette, caviar, cerefólio, flor de sal", "plate", 27, 27, 4, true],
+  ["vieiras", "entradas", "Vieiras Seladas", 98, "Vieiras canadenses douradas na manteiga noisette sobre purê aveludado de couve-flor, finalizadas com caviar e ervas do jardim.", "Vieiras, couve-flor, manteiga noisette, caviar, cerefólio, flor de sal", "plate", 27, 27, 5.5, true],
   ["tartare-wagyu", "entradas", "Tartare de Wagyu", 112, "Wagyu cortado na ponta da faca, gema curada por 48 horas, alcaparras crocantes e mini brioches tostados na manteiga.", "Wagyu, gema curada, alcaparras, cebolete, mostarda Dijon, brioche", "plate", 26, 26, 5],
   ["foie-gras", "entradas", "Foie Gras au Torchon", 138, "Terrine de foie gras preparada à moda clássica, geleia de figo roxo e brioche da casa.", "Foie gras, figo, vinho Sauternes, brioche, flor de sal", "plate", 26, 26, 4],
   ["burrata", "entradas", "Burrata Trufada", 84, "Burrata cremosa de búfala com lâminas de trufa negra, tomates heirloom e pesto de pistache siciliano.", "Burrata de búfala, trufa negra, tomates heirloom, pistache, manjericão, azeite extra virgem", "plate", 25, 25, 6],

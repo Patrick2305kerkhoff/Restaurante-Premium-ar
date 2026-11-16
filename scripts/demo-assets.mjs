@@ -49,7 +49,7 @@ if (!modelsOnly) {
 }
 // Modelos com volume real: comida em 3D (imagem→3D) sobre a louça procedural em escala.
 const food3d = manifest.food3d ?? {};
-const STAMP = ":v2"; // mude para reprocessar todos os modelos 3D
+const STAMP = ":v3"; // mude para reprocessar todos os modelos 3D
 if (!modelsOnly) {
   for (const [id, key] of Object.entries(food3d)) {
     const spec = DEMO_MODEL_SPECS.find((s) => s.id === id);
