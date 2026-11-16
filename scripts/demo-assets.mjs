@@ -10,6 +10,7 @@ import { DEMO_MODEL_SPECS } from "../src/data/demo.ts";
 const OUT = new URL("../public/demo/", import.meta.url);
 const manifest = JSON.parse(await readFile(new URL("./demo-sources.json", import.meta.url), "utf8"));
 const modelsOnly = process.argv.includes("--models");
+const ROOT = manifest.base.replace(/\d{8}_$/, "");
 const WIDE = new Set(["cover", "salon", "chef"]);
 await mkdir(OUT, { recursive: true });
 const exists = (u) => access(u).then(() => true, () => false);
@@ -38,11 +39,25 @@ if (!modelsOnly) {
     const out = new URL(`${id}-hero.jpg`, OUT);
     if (await exists(out)) continue;
     try {
-      const res = await fetch(`${manifest.base}${key}.png`);
+      const res = await fetch(`${ROOT}${key}.png`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await sharp(Buffer.from(await res.arrayBuffer())).resize({ width: 1080, withoutEnlargement: true }).jpeg({ quality: 84, mozjpeg: true }).toFile(out.pathname);
       console.log(`★ ${id}-hero`);
     } catch (e) { failed++; console.error(`✗ ${id}-hero: ${e.message}`); }
+  }
+}
+// Experimentos de imagem→3D: baixados sem alteração para avaliação.
+if (!modelsOnly) {
+  await mkdir(new URL("lab/", OUT), { recursive: true });
+  for (const [name, key] of Object.entries(manifest.lab ?? {})) {
+    const out = new URL(`lab/${name}`, OUT);
+    if (await exists(out)) continue;
+    const res = await fetch(`${ROOT}${key}`);
+    if (!res.ok) { console.error(`✗ lab/${name}: HTTP ${res.status}`); continue; }
+    const buf = new Uint8Array(await res.arrayBuffer());
+    await writeFile(out, buf);
+    const b = glbBounds(buf);
+    console.log(`⬡ lab/${name} ${(buf.byteLength / 1048576).toFixed(1)} MB — caixa ${b.width.toFixed(3)} × ${b.depth.toFixed(3)} × ${b.height.toFixed(3)}`);
   }
 }
 if (!modelsOnly && only !== "heroes") {

@@ -35,7 +35,7 @@ export const memoryKV = (): KV => {
 };
 
 type Db = Record<Entity, { id: string; restaurantId?: string }[]>;
-const DB_KEY = "maison-db-v3";
+const DB_KEY = "maison-db-v4";
 const SESSION_KEY = "maison-session";
 
 /** Contas da demonstração local. Em produção a autenticação é do Supabase Auth. */

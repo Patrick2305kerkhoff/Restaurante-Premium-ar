@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, BellRing, Box, Clock, Heart, MapPin, Minus, Phone, Plus, QrCode, Receipt, Search, Sparkles, X } from "lucide-react";
 import { backend } from "../lib/store.ts";
 import { STATUS_LABEL, type Dish, type OrderStatus } from "../lib/types.ts";
 import { asset, brl } from "../lib/util.ts";
 import { useCustomer } from "./Shell.tsx";
+import { ModelStage } from "./AR.tsx";
+import { Img, flyToCart, letters } from "../lib/motion.tsx";
 
 const dims = (d: Dish) => `${fmt(d.widthCm)} × ${fmt(d.depthCm)} × ${fmt(d.heightCm)} cm`;
 const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
@@ -14,15 +16,15 @@ function DemoTag() {
   return restaurant.demo ? <span className="demo-tag">Imagem demonstrativa</span> : null;
 }
 
-export function DishCard({ dish, wide }: { dish: Dish; wide?: boolean }) {
+export function DishCard({ dish, wide, i = 0 }: { dish: Dish; wide?: boolean; i?: number }) {
   const { restaurant, favorites, toggleFavorite, setQty, cart, toast } = useCustomer();
   const base = `/r/${restaurant.slug}`;
   const fav = favorites.includes(dish.id);
   const inCart = cart.find((l) => l.dishId === dish.id)?.qty ?? 0;
   return (
-    <article className={`dish-card${wide ? " wide" : ""}`}>
+    <article className={`dish-card${wide ? " wide" : ""}`} data-reveal="" style={{ "--i": i % 8 } as CSSProperties}>
       <Link to={`${base}/prato/${dish.id}`} className="dish-photo">
-        {dish.photoUrl ? <img src={asset(dish.photoUrl)} alt={dish.name} loading="lazy" /> : <div className="photo-missing">Sem foto</div>}
+        {dish.photoUrl ? <Img src={asset(dish.photoUrl)} alt={dish.name} loading="lazy" /> : <div className="photo-missing">Sem foto</div>}
         <DemoTag />
       </Link>
       <button className={`fav${fav ? " on" : ""}`} aria-label={fav ? `Remover ${dish.name} dos favoritos` : `Favoritar ${dish.name}`} onClick={() => toggleFavorite(dish.id)}>
@@ -35,7 +37,7 @@ export function DishCard({ dish, wide }: { dish: Dish; wide?: boolean }) {
           <strong>{brl(dish.priceCents)}</strong>
           <div className="dish-actions">
             {dish.modelUrl && <Link className="chip" to={`${base}/ar/${dish.id}`}><Box size={15} /> Ver na mesa</Link>}
-            <button className="chip solid" onClick={() => { setQty(dish.id, inCart + 1); toast(`${dish.name} adicionado ao pedido`); }} aria-label={`Adicionar ${dish.name} ao pedido`}>
+            <button className="chip solid" onClick={(e) => { flyToCart(e.currentTarget); setQty(dish.id, inCart + 1); toast(`${dish.name} adicionado ao pedido`); }} aria-label={`Adicionar ${dish.name} ao pedido`}>
               <Plus size={15} /> {inCart > 0 ? inCart : "Pedir"}
             </button>
           </div>
@@ -52,11 +54,12 @@ export function HomePage() {
   return (
     <div className="home">
       <section className="hero">
-        {restaurant.coverUrl && <img className="hero-bg" src={asset(restaurant.coverUrl)} alt="" />}
+        {restaurant.coverUrl && <div className="hero-par"><img className="hero-bg" src={asset(restaurant.coverUrl)} alt="" /></div>}
+        <div className="hero-glow" />
         <div className="hero-shade" />
         <div className="hero-content">
           <span className="eyebrow">{table ? `Bem-vindo · ${table.label}` : "Bem-vindo"}</span>
-          <h1>{restaurant.name}</h1>
+          <h1 aria-label={restaurant.name}>{letters(restaurant.name)}</h1>
           <div className="rule" />
           <p>{restaurant.tagline}</p>
           <div className="hero-actions">
@@ -67,13 +70,13 @@ export function HomePage() {
       </section>
 
       <section className="section">
-        <header className="section-head"><span className="eyebrow">Explore</span><h2>O cardápio</h2></header>
+        <header className="section-head" data-reveal=""><span className="eyebrow">Explore</span><h2>O cardápio</h2></header>
         <div className="cat-grid">
           {categories.map((c) => {
             const first = dishes.find((d) => d.categoryId === c.id);
             return (
-              <Link key={c.id} to={`${base}/cardapio?c=${c.id}`} className="cat-tile">
-                {first?.photoUrl && <img src={asset(first.photoUrl)} alt="" loading="lazy" />}
+              <Link key={c.id} to={`${base}/cardapio?c=${c.id}`} className="cat-tile" data-reveal="" style={{ "--i": categories.indexOf(c) } as CSSProperties}>
+                {first?.photoUrl && <Img src={asset(first.photoUrl)} alt="" loading="lazy" />}
                 <span>{c.name}</span>
                 <small>{dishes.filter((d) => d.categoryId === c.id).length} itens</small>
               </Link>
@@ -84,20 +87,52 @@ export function HomePage() {
 
       {featured.length > 0 && (
         <section className="section">
-          <header className="section-head"><span className="eyebrow"><Sparkles size={13} /> Assinaturas do chef</span><h2>Destaques da casa</h2></header>
-          <div className="rail">{featured.map((d) => <DishCard key={d.id} dish={d} />)}</div>
+          <header className="section-head" data-reveal=""><span className="eyebrow"><Sparkles size={13} /> Assinaturas do chef</span><h2>Destaques da casa</h2></header>
+          <div className="rail">{featured.map((d, i) => <DishCard key={d.id} dish={d} i={i} />)}</div>
         </section>
       )}
 
+      {featured[0]?.modelUrl && <Signature dish={featured[0]} />}
+
       <section className="section how">
-        <header className="section-head"><span className="eyebrow">Realidade aumentada</span><h2>Veja o prato na sua mesa</h2></header>
+        <header className="section-head" data-reveal=""><span className="eyebrow">Realidade aumentada</span><h2>Veja o prato na sua mesa</h2></header>
         <ol className="steps">
-          <li><b>1</b><div><h4>Escolha um prato</h4><p>Toque em “Ver na mesa” em qualquer item do cardápio.</p></div></li>
-          <li><b>2</b><div><h4>Aponte para a mesa</h4><p>Mova o celular devagar até a superfície ser reconhecida.</p></div></li>
-          <li><b>3</b><div><h4>Tamanho real</h4><p>O prato aparece ancorado na mesa, em escala 1:1. Caminhe ao redor e veja de todos os ângulos.</p></div></li>
+          <li data-reveal="" style={{ "--i": 0 } as CSSProperties}><b>1</b><div><h4>Escolha um prato</h4><p>Toque em “Ver na mesa” em qualquer item do cardápio.</p></div></li>
+          <li data-reveal="" style={{ "--i": 2 } as CSSProperties}><b>2</b><div><h4>Aponte para a mesa</h4><p>Mova o celular devagar até a superfície ser reconhecida.</p></div></li>
+          <li data-reveal="" style={{ "--i": 4 } as CSSProperties}><b>3</b><div><h4>Tamanho real</h4><p>O prato aparece ancorado na mesa, em escala 1:1. Caminhe ao redor e veja de todos os ângulos.</p></div></li>
         </ol>
       </section>
     </div>
+  );
+}
+
+/** Bloco editorial com o prato-assinatura em 3D interativo (carrega só quando entra na tela). */
+function Signature({ dish }: { dish: Dish }) {
+  const { restaurant } = useCustomer();
+  const ref = useRef<HTMLDivElement>(null);
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setShow(true); io.disconnect(); } }, { rootMargin: "200px" });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <section className="section signature">
+      <div className="sig-stage" ref={ref} data-reveal="zoom">
+        <div className="orbit" /><div className="orbit o2" />
+        {show && <ModelStage dish={dish} />}
+      </div>
+      <div className="sig-copy" data-reveal="">
+        <span className="eyebrow">Toque e gire</span>
+        <h2>{dish.name}</h2>
+        <p>{dish.description}</p>
+        <div className="hero-actions">
+          <Link className="btn" to={`/r/${restaurant.slug}/ar/${dish.id}`}><Box size={17} /> Ver na minha mesa</Link>
+          <Link className="btn ghost" to={`/r/${restaurant.slug}/prato/${dish.id}`}>Detalhes · {brl(dish.priceCents)}</Link>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -129,7 +164,7 @@ export function MenuPage() {
       {groups.map(({ c, items }) => (
         <section key={c.id} className="menu-group">
           <h2>{c.name}<small>{items.length}</small></h2>
-          <div className="dish-grid">{items.map((d) => <DishCard key={d.id} dish={d} />)}</div>
+          <div className="dish-grid">{items.map((d, i) => <DishCard key={d.id} dish={d} i={i} />)}</div>
         </section>
       ))}
       {!groups.length && <div className="empty"><h2>Nada encontrado</h2><p>Tente outro termo de busca.</p></div>}
@@ -148,13 +183,8 @@ export function DishPage() {
   const inCart = cart.find((l) => l.dishId === dish.id)?.qty ?? 0;
   return (
     <div className="dish-page">
-      <div className="dish-hero">
-        {dish.photoUrl && <img src={asset(dish.photoUrl)} alt={dish.name} />}
-        <button className="round back" onClick={() => nav(-1)} aria-label="Voltar"><ArrowLeft size={20} /></button>
-        <button className={`round favbtn${fav ? " on" : ""}`} onClick={() => toggleFavorite(dish.id)} aria-label="Favoritar"><Heart size={20} fill={fav ? "currentColor" : "none"} /></button>
-        <DemoTag />
-      </div>
-      <div className="dish-detail">
+      <Gallery dish={dish} fav={fav} onFav={() => toggleFavorite(dish.id)} onBack={() => nav(-1)} />
+      <div className="dish-detail" data-reveal="">
         <span className="eyebrow">{categories.find((c) => c.id === dish.categoryId)?.name}</span>
         <h1>{dish.name}</h1>
         <div className="price">{brl(dish.priceCents)}</div>
@@ -179,11 +209,43 @@ export function DishPage() {
             <span>{qty}</span>
             <button onClick={() => setLocalQty((n) => n + 1)} aria-label="Aumentar"><Plus size={16} /></button>
           </div>
-          <button className="btn grow" onClick={() => { setQty(dish.id, inCart + qty); toast(`${qty} × ${dish.name} no pedido`); setLocalQty(1); }}>
+          <button className="btn grow" onClick={(e) => { flyToCart(e.currentTarget); setQty(dish.id, inCart + qty); toast(`${qty} × ${dish.name} no pedido`); setLocalQty(1); }}>
             Adicionar · {brl(dish.priceCents * qty)}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Gallery({ dish, fav, onFav, onBack }: { dish: Dish; fav: boolean; onFav: () => void; onBack: () => void }) {
+  const slides = [dish.photoUrl && "foto", dish.topPhotoUrl && "topo", dish.modelUrl && "3d"].filter(Boolean) as string[];
+  const [at, setAt] = useState(0);
+  const [seen3d, setSeen3d] = useState(false);
+  const track = useRef<HTMLDivElement>(null);
+  const go = (i: number) => { track.current?.scrollTo({ left: i * track.current.clientWidth, behavior: "smooth" }); };
+  const onScroll = () => { const t = track.current; if (t) setAt(Math.round(t.scrollLeft / t.clientWidth)); };
+  useEffect(() => { if (slides[at] === "3d") setSeen3d(true); }, [at, slides]);
+  const label: Record<string, string> = { foto: "Foto", topo: "Vista de cima", "3d": "3D" };
+  return (
+    <div className="dish-hero">
+      <div className="gallery" ref={track} onScroll={onScroll}>
+        {slides.map((k) => (
+          <div className="slide" key={k}>
+            {k === "foto" && <Img className="zoom-in" src={asset(dish.photoUrl)} alt={dish.name} />}
+            {k === "topo" && <Img src={asset(dish.topPhotoUrl)} alt={`${dish.name} visto de cima`} loading="lazy" />}
+            {k === "3d" && <div className="slide-3d">{seen3d && <ModelStage dish={dish} />}</div>}
+          </div>
+        ))}
+      </div>
+      <button className="round back" onClick={onBack} aria-label="Voltar"><ArrowLeft size={20} /></button>
+      <button className={`round favbtn${fav ? " on" : ""}`} onClick={onFav} aria-label="Favoritar"><Heart size={20} fill={fav ? "currentColor" : "none"} /></button>
+      {slides.length > 1 && (
+        <div className="gallery-tabs" role="tablist">
+          {slides.map((k, i) => <button key={k} role="tab" aria-selected={at === i} className={at === i ? "on" : ""} onClick={() => go(i)}>{label[k]}</button>)}
+        </div>
+      )}
+      <DemoTag />
     </div>
   );
 }
@@ -194,7 +256,7 @@ export function FavoritesPage() {
   return (
     <div className="page">
       <header className="page-head"><span className="eyebrow">Sua seleção</span><h1>Favoritos</h1></header>
-      {list.length ? <div className="dish-grid">{list.map((d) => <DishCard key={d.id} dish={d} />)}</div> : (
+      {list.length ? <div className="dish-grid">{list.map((d, i) => <DishCard key={d.id} dish={d} i={i} />)}</div> : (
         <div className="empty"><Heart size={34} /><h2>Nenhum favorito ainda</h2><p>Toque no coração de um prato para guardá-lo aqui.</p><Link className="btn" to={`/r/${restaurant.slug}/cardapio`}>Explorar o cardápio</Link></div>
       )}
     </div>

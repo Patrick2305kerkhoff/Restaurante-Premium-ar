@@ -20,12 +20,18 @@ const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 
 export function ModelStage({ dish, onState, mvRef }: { dish: Dish; onState?: (s: ArState) => void; mvRef?: React.MutableRefObject<MV | null> }) {
   const ref = useRef<MV | null>(null);
   const [ready, setReady] = useState(false);
+  const tallShape = dish.shape === "bottle" || dish.shape === "glass";
+  const orbit = tallShape ? "25deg 78deg 105%" : "20deg 52deg 105%";
   useEffect(() => { import("@google/model-viewer").then(() => setReady(true)); }, []);
   useEffect(() => {
     const mv = ref.current;
     if (!mv || !ready) return;
     if (mvRef) mvRef.current = mv;
-    const onLoad = () => onState?.(mv.canActivateAR ? "ready" : "unsupported");
+    const onLoad = () => {
+      onState?.(mv.canActivateAR ? "ready" : "unsupported");
+      // entrada: a câmera aproxima suavemente até o enquadramento final
+      requestAnimationFrame(() => mv.setAttribute("camera-orbit", orbit));
+    };
     const onStatus = (e: Event) => {
       const s = (e as CustomEvent<{ status: string }>).detail.status;
       onState?.(s === "session-started" ? "scanning" : s === "object-placed" ? "placed" : s === "failed" ? "failed" : mv.canActivateAR ? "ready" : "unsupported");
@@ -35,9 +41,8 @@ export function ModelStage({ dish, onState, mvRef }: { dish: Dish; onState?: (s:
     mv.addEventListener("ar-status", onStatus);
     mv.addEventListener("error", onError);
     return () => { mv.removeEventListener("load", onLoad); mv.removeEventListener("ar-status", onStatus); mv.removeEventListener("error", onError); };
-  }, [ready, onState, mvRef]);
+  }, [ready, onState, mvRef, orbit]);
   if (!ready) return <div className="stage-loading"><div className="spinner" /></div>;
-  const tall = dish.shape === "bottle" || dish.shape === "glass";
   return (
     <model-viewer
       ref={ref as never}
@@ -55,7 +60,11 @@ export function ModelStage({ dish, onState, mvRef }: { dish: Dish; onState?: (s:
       shadow-intensity="1.1"
       shadow-softness="0.9"
       exposure="1.05"
-      camera-orbit={tall ? "25deg 78deg auto" : "20deg 52deg auto"}
+      camera-orbit={tallShape ? "-70deg 60deg 240%" : "-80deg 28deg 240%"}
+      interpolation-decay="160"
+      auto-rotate=""
+      auto-rotate-delay="1800"
+      rotation-per-second="14deg"
       min-camera-orbit="auto 5deg auto"
       max-camera-orbit="auto 89deg auto"
       style={{ width: "100%", height: "100%", background: "transparent" }}
@@ -96,6 +105,7 @@ export function ARPage() {
   return (
     <div className="ar-page">
       <div className="ar-stage">
+        <div className="orbit" /><div className="orbit o2" />
         <ModelStage dish={dish} onState={setState} mvRef={mv} />
         <button className="round back" onClick={() => nav(-1)} aria-label="Voltar"><ArrowLeft size={20} /></button>
         <span className="scale-tag"><Ruler size={14} /> Escala 1:1 · {fmt(dish.widthCm)} × {fmt(dish.depthCm)} × {fmt(dish.heightCm)} cm</span>

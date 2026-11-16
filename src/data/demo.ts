@@ -151,7 +151,7 @@ function toDish(restaurantId: string, r: Row, i: number): Dish {
     priceCents: Math.round(price * 100),
     available: true,
     featured: !!featured,
-    photoUrl: `demo/${id}.jpg`,
+    photoUrl: textured ? `demo/${id}-hero.jpg` : `demo/${id}.jpg`,
     topPhotoUrl: textured ? `demo/${id}-top.jpg` : null,
     modelUrl: `demo/${id}.glb`,
     usdzUrl: null,

@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from "react-router-dom";
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { BookOpen, Heart, Home, Info, ShoppingBag } from "lucide-react";
 import { backend } from "../lib/store.ts";
 import type { Category, Dish, Restaurant, Table } from "../lib/types.ts";
 import { asset, themeVars, useList, useStored } from "../lib/util.ts";
+import { useReveal, useScrollVar } from "../lib/motion.tsx";
 
 export type CartLine = { dishId: string; qty: number; note?: string };
 export type MyOrder = { id: string; createdAt: string; totalCents: number; items: { name: string; qty: number }[] };
@@ -54,6 +55,9 @@ export function CustomerShell() {
   const [table, setTable] = useStored<Table | null>(`mp:${slug}:table`, null);
   const [myOrders, setMyOrders] = useStored<MyOrder[]>(`mp:${slug}:orders`, []);
   const [toastMsg, setToastMsg] = useState("");
+  const loc = useLocation();
+  useReveal(loc.pathname + (restaurant?.id ?? "") + dishes.data.length);
+  useScrollVar();
 
   const toast = useCallback((m: string) => { setToastMsg(m); window.setTimeout(() => setToastMsg((c) => (c === m ? "" : c)), 2800); }, []);
   useEffect(() => { if (restaurant) document.title = `${restaurant.name} · Cardápio`; }, [restaurant]);
@@ -104,15 +108,15 @@ export function CustomerShell() {
         <header className="topbar">
           <Link to={base} className="topbar-brand" aria-label={restaurant.name}><Brand r={restaurant} /></Link>
           <nav className="topnav" aria-label="Principal">
-            {tabs.map(([to, label, , end]) => <NavLink key={to} to={to} end={end}>{label}{label === "Pedido" && ctx.cartCount > 0 && <b className="badge">{ctx.cartCount}</b>}</NavLink>)}
+            {tabs.map(([to, label, , end]) => <NavLink key={to} to={to} end={end}>{label}{label === "Pedido" && <i data-cart-target="" className="cart-anchor">{ctx.cartCount > 0 && <b key={ctx.cartCount} className="badge">{ctx.cartCount}</b>}</i>}</NavLink>)}
           </nav>
           <span className="table-chip">{table ? table.label : "Sem mesa"}</span>
         </header>
-        <main className="view"><Outlet /></main>
+        <main className="view" key={loc.pathname}><Outlet /></main>
         <nav className="tabbar" aria-label="Navegação">
           {tabs.map(([to, label, icon, end]) => (
             <NavLink key={to} to={to} end={end}>
-              <span className="tab-icon">{icon}{label === "Pedido" && ctx.cartCount > 0 && <b className="badge">{ctx.cartCount}</b>}</span>
+              <span className="tab-icon" {...(label === "Pedido" ? { "data-cart-target": "" } : {})}>{icon}{label === "Pedido" && ctx.cartCount > 0 && <b key={ctx.cartCount} className="badge">{ctx.cartCount}</b>}</span>
               <small>{label}</small>
             </NavLink>
           ))}
