@@ -49,17 +49,18 @@ if (!modelsOnly) {
 }
 // Modelos com volume real: comida em 3D (imagem→3D) sobre a louça procedural em escala.
 const food3d = manifest.food3d ?? {};
+const STAMP = ":v2"; // mude para reprocessar todos os modelos 3D
 if (!modelsOnly) {
   for (const [id, key] of Object.entries(food3d)) {
     const spec = DEMO_MODEL_SPECS.find((s) => s.id === id);
     const stamp = new URL(`${id}.3d`, OUT);
-    if (!spec || ((await exists(stamp)) && (await readFile(stamp, "utf8")) === key)) continue;
+    if (!spec || ((await exists(stamp)) && (await readFile(stamp, "utf8")) === key + STAMP)) continue;
     try {
       const res = await fetch(`${ROOT}${key}.glb`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { glb, size } = await hybridDish(new Uint8Array(await res.arrayBuffer()), spec);
       await writeFile(new URL(`${id}.glb`, OUT), glb);
-      await writeFile(stamp, key);
+      await writeFile(stamp, key + STAMP);
       console.log(`⬢ ${id}.glb (3D) ${(glb.byteLength / 1048576).toFixed(2)} MB — ${size.map((v) => (v * 100).toFixed(1)).join(" × ")} cm`);
     } catch (e) { failed++; console.error(`✗ ${id} 3D: ${e.message}`); }
   }
