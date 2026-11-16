@@ -31,7 +31,7 @@ export function useScrollVar() {
 /** Imagem com esqueleto cintilante e entrada suave ao carregar. */
 export function Img({ className = "", ...p }: ImgHTMLAttributes<HTMLImageElement>) {
   const [ok, setOk] = useState(false);
-  return <img {...p} className={`img-fade${ok ? " ok" : ""} ${className}`} onLoad={() => setOk(true)} ref={(el) => { if (el?.complete && el.naturalWidth) setOk(true); }} />;
+  return <img {...p} className={`img-fade${ok ? " loaded" : ""} ${className}`} onLoad={() => setOk(true)} ref={(el) => { if (el?.complete && el.naturalWidth) setOk(true); }} />;
 }
 
 /** Ponto dourado que "voa" do botão até o ícone do pedido. */
